@@ -1,0 +1,106 @@
+import pandas as pd
+
+sample_csv = pd.read_csv('sample_sheet.csv', index_col='name')
+CONDITIONS = set(sample_csv['condition'].tolist())
+REPS = set(sample_csv['replicate'].tolist())
+
+rule all:
+    input:
+        expand('results/{condition}_{rep}.bam', condition=CONDITIONS, rep=REPS),
+        expand('results/{condition}_{rep}.sorted.bam', condition=CONDITIONS, rep=REPS),
+        expand('results/{condition}_{rep}.flagstat.txt', condition=CONDITIONS, rep=REPS),
+        expand('results/{condition}_{rep}.sorted.bam.bai', condition=CONDITIONS, rep=REPS),
+        'results/multiqc_report.html',
+        expand('results/{condition}_{rep}.bw', condition=CONDITIONS, rep=REPS),
+        'results/multiBigWigSummary_matrix.npz',
+        'results/pearson_correlation_heatmap.png'
+
+
+rule bowtie2_align:
+    input:
+        'results/{condition}_{rep}.trimmed.fastq.gz',
+    output:
+        'results/{condition}_{rep}.bam'
+    threads: 16
+    params:
+        'results/hg_index'
+    conda:
+        'envs/bowtie2_env.yml'
+    shell:
+        '''
+        bowtie2 -x {params} -p {threads} -U {input} | samtools view -bS - > {output}
+        '''
+
+rule samtools_sort:
+    input:
+        'results/{condition}_{rep}.bam'
+    output:
+        'results/{condition}_{rep}.sorted.bam'
+    conda:
+        'envs/samtools_env.yml'
+    shell:
+        'samtools sort -@ {threads} -o {output} {input}'
+
+rule samtools_flagstats:
+    input:
+        'results/{condition}_{rep}.sorted.bam'
+    output:
+        'results/{condition}_{rep}.flagstat.txt'
+    conda:
+        'envs/samtools_env.yml'
+    shell:
+        'samtools flagstat {input} > {output}'
+
+rule samtools_idx:
+    input:
+        'results/{condition}_{rep}.sorted.bam'
+    output:
+        'results/{condition}_{rep}.sorted.bam.bai'
+    conda:
+        'envs/samtools_env.yml'
+    shell:
+        'samtools index {input} {output}'
+
+rule multiqc:
+    input:
+        expand('results/{condition}_{rep}.flagstat.txt', condition=CONDITIONS, rep=REPS)
+    output:
+        'results/multiqc_report.html'
+    conda:
+        'envs/multiqc_env.yml'
+    shell:
+        'multiqc results/ -o . -n results/multiqc_report.html'
+
+rule bamCoverage:
+    input:
+        bam = 'results/{condition}_{rep}.sorted.bam',
+        bai = 'results/{condition}_{rep}.sorted.bam.bai'
+    output:
+        'results/{condition}_{rep}.bw'
+    threads: 4
+    conda:
+        'envs/deeptools_env.yml'
+    shell:
+        'bamCoverage -b {input} -o {output}'
+
+rule multiBwSummary:
+    input:
+        expand('results/{condition}_{rep}.bw', condition=CONDITIONS, rep=REPS)
+    output:
+        'results/multiBigWigSummary_matrix.npz'
+    conda:
+        'envs/deeptools_env.yml'
+    shell:
+        'multiBigwigSummary bins -b {input} -o {output}'
+
+rule plotCorrelation:
+    input:
+        "results/multiBigWigSummary_matrix.npz"
+    output:
+        "results/pearson_correlation_heatmap.png"
+    conda:
+        'envs/deeptools_env.yml'
+    shell:
+        """
+        plotCorrelation --corData {input} --whatToPlot heatmap --corMethod pearson --plotTitle "Pearson Correlation of ChIP-seq Samples" --plotNumbers --colorMap RdYlBu -o {output}
+        """

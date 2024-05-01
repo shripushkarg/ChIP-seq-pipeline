@@ -1,0 +1,62 @@
+---
+title: "Week1.Rmd"
+output: html_document
+date: '2024-03-01'
+---
+
+Use this notebook to quickly write the methods for the week:
+
+Week 1: ChIPseq Methods
+
+## Introduction
+
+Chromatin immunoprecipitation followed by sequencing (ChIP-seq) is used to study protein-DNA 
+interactions and epigenetic modifications at a genome-wide scale. In Week 1, our goal is to perform quality 
+control (QC), trimming of sequencing reads, and building a genome index for subsequent ChIP-seq data analysis.
+This is done intially on the subsamples before using the full files for testing the pipeline's working.
+
+## Quality Control
+
+For quality control, we utilized FastQC, a tool for assessing the quality of high-throughput sequencing data. 
+FastQC generates a comprehensive report containing various metrics such as per-base sequence quality, per-sequence 
+quality scores, GC content, and sequence length distribution. These metrics allow us to identify potential issues with
+the sequencing data, such as adapter contamination, overrepresented sequences, and sequence biases.
+
+We executed FastQC on the raw sequencing reads to evaluate their overall quality and identify any anomalies that may
+affect downstream analyses. This step helps in making decisions regarding data preprocessing and filtering.
+
+## Trimming
+
+Trimming of sequencing reads is essential to remove adapter sequences, low-quality bases, and other artifacts that 
+may interfere with downstream analysis. We employed Trimmomatic, a tool for read trimming and quality filtering.
+
+The Trimmomatic parameters used for trimming are as follows:
+- **ILLUMINACLIP**: Adapter sequences were removed using a predefined adapter file to eliminate any residual adapter 
+contamination. We used a mismatch error rate of 2, a palindrome clip threshold of 30, and a simple clip threshold of 10.
+
+- **LEADING**: Trims low-quality bases from the beginning of the reads to improve the overall quality of the data.
+The quality threshold was set to 3.
+
+- **TRAILING**: Trims low-quality bases from the end of the reads to enhance the reliability of downstream analyses.
+The quality threshold was set to 3.
+
+- **SLIDINGWINDOW**: Applies a sliding window approach to trim bases with average quality scores below a specified 
+threshold, thereby improving the overall quality of the reads. We used a window size of 4 and a required quality of 15.
+
+## Building a Genome Index
+
+Alignment of sequencing reads to the reference genome is a crucial step in ChIP-seq data analysis. 
+Prior to alignment, a genome index using Bowtie2 was built, a fast and memory-efficient aligner.
+
+The Bowtie2 index allows for rapid and efficient alignment of sequencing reads to the reference genome. 
+We used the GRCh38 chr 2 fasta file to construct the index, ensuring compatibility with the reference genome
+used in our analysis.
+
+## Conclusion
+
+In Week 1, we performed quality control, trimming of sequencing reads, and built a genome index for subsequent 
+ChIP-seq data analysis. These preprocessing steps are essential for ensuring the accuracy and reliability of 
+downstream analyses such as read alignment and peak calling. 
+
+If asked, you may also include any plots or figures in this notebook as well:
+

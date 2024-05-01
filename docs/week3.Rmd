@@ -1,0 +1,52 @@
+---
+title: "Week3.Rmd"
+output: html_document
+date: '2024-03-01'
+---
+
+Use this notebook to quickly write the methods for the week:
+
+## Introduction
+
+Now that we have our aligned reads and performed basic quality control, we are going to proceed to peak calling using HOMER. 
+This utility requires us to first convert the BAM files to a HOMER specific format, which is required prior to using HOMER to run downstream analyses.
+
+## Generating Tag Directories with HOMER
+
+We generated tag directories for each sample using the `makeTagDirectory` command in HOMER. Each sample has its separate tag directory.
+All options were left at default parameters.
+
+## Peak Calling with HOMER's findPeaks
+
+We performed peak calling using HOMER's `findPeaks` command on both of our replicate experiments. We used the input as our background 
+enrichment control. 
+
+## Converting HOMER Output to BED Format
+
+The output of `findPeaks` is in a HOMER-specific format. We converted this .txt HOMER peak file to a standard BED formatted file 
+using the `pos2bed` utility.
+
+## Determining Reproducible Peaks with Bedtools
+
+We used Bedtools to generate a single list of "reproducible peaks" from our two peak files. We employed a strategy based on the 
+intersection of peaks from replicates. The intersection strategy was used to determine reproducible peaks because it offers a
+method for identifying peaks that are consistently present across replicates.
+
+## Filtering Signal-Artifact Regions
+
+We filtered out any reproducible peaks that fall into blacklisted regions using Bedtools. This step aims to remove noise and 
+signal-artifacts from our peak lists.
+
+## Annotating Peaks to Genomic Features
+
+We performed peak annotation using the `annotatePeaks.pl` utility in HOMER to assign peaks to their nearest genomic features. 
+We provided the decompressed GTF file for annotation.
+
+## Motif Finding with HOMER
+
+Using the set of reproducible peaks, we performed motif finding using HOMER's `findMotifsGenome.pl` to identify enriched motifs 
+in our peak locations. We provided the path to the FASTA file of the human reference genome.
+
+
+If asked, you may also include any plots or figures in this notebook as well:
+

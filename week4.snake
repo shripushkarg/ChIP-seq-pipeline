@@ -1,0 +1,38 @@
+import pandas as pd
+
+sample_csv = pd.read_csv('sample_sheet.csv', index_col='name')
+CONDITIONS = set(sample_csv['condition'].tolist())
+REPS = set(sample_csv['replicate'].tolist())
+
+rule all:
+    input:
+        expand('results/RUNX1_{replicate}_coverage_plot.pdf', replicate=REPS)
+
+rule computeMatrix:
+    input:
+        bw="results/RUNX1_{replicate}.bw",
+        bed="results/hg38_genes.bed"
+    output:
+        matrix="results/RUNX1_{replicate}_coverage_matrix.gz"
+    params:
+    conda:
+        'envs/deeptools_env.yml'
+    threads: 4
+    shell:
+        """
+        computeMatrix scale-regions -S {input.bw} -R {input.bed} \
+        --beforeRegionStartLength 2000 --afterRegionStartLength 2000 \
+        -o {output.matrix}
+        """
+
+rule plotMatrix:
+    input:
+        matrix="results/RUNX1_{replicate}_coverage_matrix.gz"
+    output:
+        plot="results/RUNX1_{replicate}_coverage_plot.pdf"
+    conda:
+        'envs/deeptools_env.yml'
+    shell:
+        """
+        plotProfile -m {input.matrix} -out {output.plot}
+        """
